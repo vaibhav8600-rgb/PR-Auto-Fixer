@@ -3,6 +3,7 @@ name: PR Auto-Fixer
 
 permissions:
   contents: write
+  actions: write    # Add this line if missing
   pull-requests: write
 
 on:
