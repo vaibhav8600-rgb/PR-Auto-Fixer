@@ -1,4 +1,9 @@
+
 name: PR Auto-Fixer
+
+permissions:
+  contents: write
+  pull-requests: write
 
 on:
   pull_request:
