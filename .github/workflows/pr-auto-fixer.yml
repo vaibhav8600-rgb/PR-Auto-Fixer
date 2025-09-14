@@ -1,0 +1,93 @@
+name: PR Auto-Fixer
+
+on:
+  pull_request:
+    types: [opened, synchronize, review_requested, review_comment]
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node.js (for JS/TS projects)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linters and formatters
+        run: |
+          npx eslint . --fix
+          npx prettier --write .
+
+      - name: Detect and apply review comment fixes
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const comments = await github.rest.pulls.listReviewComments({
+              owner, repo, pull_number: prNumber
+            });
+
+            // Filter comments with suggestions (diffs or code blocks)
+            // For demo, just log comments
+            console.log("Review comments:", comments.data);
+
+            // TODO: Parse suggestions and apply patches or call AI fixer if enabled
+
+      - name: Commit and push fixes
+        run: |
+          git config user.name "PR Auto-Fixer"
+          git config user.email "bot@users.noreply.github.com"
+          git add .
+          git commit -m "chore(pr-auto-fixer): applied review suggestions" || echo "No changes to commit"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Reply to review comments
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const comments = await github.rest.pulls.listReviewComments({
+              owner, repo, pull_number: prNumber
+            });
+
+            for (const comment of comments.data) {
+              // Check if comment is addressed (custom logic needed)
+              // For demo, reply to all comments
+              await github.rest.pulls.createReplyForReviewComment({
+                owner,
+                repo,
+                pull_number: prNumber,
+                comment_id: comment.id,
+                body: "✅ Addressed via PR Auto-Fixer."
+              });
+            }
+
+      - name: Re-request review
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const reviewers = context.payload.pull_request.requested_reviewers.map(r => r.login);
+
+            if (reviewers.length > 0) {
+              await github.rest.pulls.requestReviewers({
+                owner,
+                repo,
+                pull_number: prNumber,
+                reviewers
+              });
+            }
