@@ -13,17 +13,16 @@ on:
 jobs:
   auto-fix:
     runs-on: ubuntu-latest
-    steps:
-      - name: Set up git authentication
-        run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
-      
+    steps:      
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.ref }}
+      - name: Set up git authentication
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}    
 
       - name: Set up Node.js (for JS/TS projects)
         uses: actions/setup-node@v3
@@ -62,6 +61,7 @@ jobs:
           git add .
           git commit -m "chore(pr-auto-fixer): applied review suggestions" || echo "No changes to commit"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          
 
       - name: Reply to review comments
         uses: actions/github-script@v6
