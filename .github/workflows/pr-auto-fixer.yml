@@ -14,6 +14,12 @@ jobs:
   auto-fix:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up git authentication
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git remote set-url origin https://${{ secrets.GH_PAT }}@github.com/${{ github.repository }}
+      
       - name: Checkout PR branch
         uses: actions/checkout@v3
         with:
